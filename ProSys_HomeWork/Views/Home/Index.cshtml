@@ -1,0 +1,608 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+@section Scripts{
+    <script>
+        $(document).ready(function () {
+            
+            $(".modal").on("show.bs.modal", function () {
+                $(this).find("input").val(""); 
+                $(this).find(".text-danger").text("").hide();
+                $(this).find("input").css("border-color", "");
+                $(this).find("select").css("border-color", "");
+            });
+
+            $(".validate-input").on("input", function () {
+                
+                let fieldName = $(this).attr("id");
+                let fieldValue = $(this).val().trim();
+                let errorSpan = $(this).next(".text-danger");
+                let isValid = true;
+                let errorMessage = "";
+
+                switch (fieldName) {
+                    case "lessonCode":
+                        if (!/^[A-Za-z]{3}$/.test(fieldValue)) {
+                            isValid = false;
+                            errorMessage = "Maksimum uzunluq 3 simvol və yalnız hərflər";
+                        }
+                        break;
+
+                    case "lessonName":
+                        if (!/^[A-Za-z\s]{1,30}$/.test(fieldValue)) {
+                            isValid = false;
+                            errorMessage = "Maksimum uzunluq 30 simvol";
+                        }
+                        break;
+
+                    case "classNumber2": 
+                    case "classNumber":
+                        if (!/^(?:[1-9]|1[0-2])$/.test(fieldValue) || fieldValue < 1 || fieldValue > 12) {
+                            isValid = false;
+                            errorMessage = "1-12 aralığında olmalıdır";
+                        }
+                        break;
+
+                    case "firstName":
+                    case "lastName":
+                    case "teacherName":
+                    case "teacherSurname":
+                        if (!/^[A-Za-z\s]{3,30}$/.test(fieldValue)) {
+                            isValid = false;
+                            errorMessage = "Maksimum uzunluq 30 simvol";
+                        }
+                        break;
+
+                    case "studentNumber":
+                        if (!/^(?:[1-9][0-9]{0,4})$/.test(fieldValue) || fieldValue < 1 || fieldValue > 99999) {
+                            isValid = false;
+                            errorMessage = "1-99999 aralığında olmalıdır";
+                        }
+                        break;
+                        
+                    case "lessonId":
+                        if (fieldValue === "") {
+                            isValid = false;
+                            errorMessage = "Dərs xanası məcburidir";
+                        }
+                        break;
+
+                    case "studentId":
+                        if (fieldValue === "") {
+                            isValid = false;
+                            errorMessage = "Tələbə xanası məcburidir";
+                        }
+                        break;
+
+                    case "examDate":
+                        if (!fieldValue) {
+                            isValid = false;
+                            errorMessage = "İmtahan tarixi boş ola bilməz!";
+                        }
+                        break;
+
+                    case "grade":
+                        if (!/^[0-5]$/.test(fieldValue) || fieldValue < 0 || fieldValue > 5) {
+                            isValid = false;
+                            errorMessage = "0-5 aralığında olmalıdır";
+                        }
+                        break;
+                        
+                    default:
+                        console.log("Bilinməyən xana:", fieldName);
+                }
+                
+                if (isValid) {
+                    errorSpan.text("").hide();
+                    $(this).css("border-color", "green");
+                } else {
+                    errorSpan.text(errorMessage).show();
+                    $(this).css("border-color", "red");
+                }
+            });
+
+            $("#saveLesson").click(function (e) {
+
+                let hasError = false;
+
+                $(".validate-input").each(function () {
+                    let errorSpan = $(this).siblings(".text-danger");
+
+                    if (errorSpan.text() !== "") {
+                        hasError = true;
+                    }
+                });
+
+                if (hasError) {
+                    alert("Formu göndərmək üçün xanaları düzgün doldurmalısınız");
+                }else{
+                    
+                    let lessonData = {
+                        LessonCode: $("#lessonCode").val(),
+                        LessonName: $("#lessonName").val(),
+                        ClassNumber: $("#classNumber").val(),
+                        TeacherName: $("#teacherName").val(),
+                        TeacherSurname: $("#teacherSurname").val(),
+                    };
+
+                    $.ajax({
+                        type: "POST",
+                        url: "/Home/RegisterLesson/",
+                        data: JSON.stringify(lessonData),
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: function (response) {
+                            switch (response.type){
+                                case 0:
+                                    alert("Yeni dərs əlavə edildi");
+                                    $("#lessonModal").modal("hide");
+                                    $("#lessonForm")[0].reset();
+                                    break;
+                                    
+                                case 1:
+                                    alert("Validasiya xətası");
+                                    break;
+
+                                case 2:
+                                    alert(response.message ?? "Xəta");
+                                    break;
+
+                            }
+                        }
+                    });
+                }
+            });
+
+            $("#saveStudent").click(function (e) {
+
+                let hasError = false;
+
+                $(".validate-input").each(function () {
+                    let errorSpan = $(this).siblings(".text-danger");
+
+                    if (errorSpan.text() !== "") {
+                        hasError = true;
+                    }
+                });
+
+                if (hasError) {
+                    alert("Formu göndərmək üçün xanaları düzgün doldurmalısınız");
+                }else{
+
+                    let studentData = {
+                        StudentNumber: $("#studentNumber").val(),
+                        FirstName: $("#firstName").val(),
+                        LastName: $("#lastName").val(),
+                        ClassNumber: Number($("#classNumber2").val()),
+                    };
+
+                    $.ajax({
+                        type: "POST",
+                        url: "/Home/RegisterStudent/",
+                        data: JSON.stringify(studentData),
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: function (response) {
+                            switch (response){
+                                case 0:
+                                    alert("Yeni tələbə əlavə edildi");
+                                    $("#studentModal").modal("hide");
+                                    $("#studentForm")[0].reset();
+                                    break;
+
+                                case 1:
+                                    alert("Validasiya xətası");
+                                    break;
+
+                                case 2:
+                                    alert("Xəta");
+                                    break;
+
+                            }
+                        }
+                    });
+                }
+            });
+
+            $("#examModal").on("show.bs.modal", function () {
+                
+                $.ajax({
+                    type: "GET",
+                    url: "/Home/GetLessons/",
+                    dataType: "json",
+                    success: function (response) {
+                        let $lessonSelect = $("#lessonId");
+                        $lessonSelect.empty();
+                        $lessonSelect.append('<option value="">Dərs seçin</option>');
+                        response.forEach(function (lesson) {
+                            $lessonSelect.append(`<option value="${lesson.id}">${lesson.lessonCode}</option>`);
+                        });
+                    },
+                    error: function () {
+                    }
+                });
+
+                
+                $.ajax({
+                    type: "GET",
+                    url: "/Home/GetStudents/",
+                    dataType: "json",
+                    success: function (response) {
+                        let $studentSelect = $("#studentId");
+                        $studentSelect.empty();
+                        $studentSelect.append('<option value="">Tələbə seçin</option>');
+                        response.forEach(function (student) {
+                            $studentSelect.append(`<option value="${student.id}">${student.firstName} ${student.lastName}</option>`);
+                        });
+                    },
+                    error: function () {
+                    }
+                });
+            });
+
+            $("#saveExam").click(function (e) {
+
+                let hasError = false;
+
+                $(".validate-input").each(function () {
+                    let errorSpan = $(this).siblings(".text-danger");
+
+                    if (errorSpan.text() !== "") {
+                        hasError = true;
+                    }
+                });
+
+                if (hasError) {
+                    alert("Formu göndərmək üçün xanaları düzgün doldurmalısınız");
+                }else{
+
+                    let examData = {
+                        LessonId: $("#lessonId").val(),
+                        StudentId: $("#studentId").val(),
+                        ExamDate: $("#examDate").val(),
+                        Grade: Number($("#grade").val()),
+                    };
+
+                    $.ajax({
+                        type: "POST",
+                        url: "/Home/RegisterExam/",
+                        data: JSON.stringify(examData),
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: function (response) {
+                            switch (response){
+                                case 0:
+                                    alert("Yeni imtahan əlavə edildi");
+                                    $("#examModal").modal("hide");
+                                    $("#examForm")[0].reset();
+                                    break;
+
+                                case 1:
+                                    alert("Validasiya xətası");
+                                    break;
+
+                                case 2:
+                                    alert("Xəta");
+                                    break;
+
+                            }
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+}
+
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - ProSys</title>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #f4f6f8;
+            font-family: 'Montserrat', sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-bottom: 1px solid #eaeaea;
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+        }
+        .navbar-brand {
+            font-size: 26px;
+            font-weight: 700;
+            color: #333;
+            text-decoration: none;
+        }
+        .navbar-menu {
+            list-style: none;
+            display: flex;
+        }
+        .navbar-menu li {
+            margin-left: 25px;
+        }
+        .navbar-menu li a {
+            color: #333;
+            text-decoration: none;
+            font-size: 16px;
+            padding: 8px 12px;
+            border-radius: 5px;
+            transition: background 0.3s ease;
+        }
+        .navbar-menu li a:hover {
+            background: #ff5c5c;
+            color: #fff;
+        }
+
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://via.placeholder.com/1200x500') center/cover no-repeat;
+            padding: 120px 20px;
+            text-align: center;
+            color: #fff;
+        }
+        .hero h1 {
+            font-size: 50px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+        }
+        .hero p {
+            font-size: 22px;
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.4);
+        }
+        .btn {
+            background: #ff5c5c;
+            color: #fff;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background 0.3s ease, transform 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .btn:hover {
+            background: #e04e4e;
+            transform: translateY(-3px);
+        }
+
+        .features {
+            padding: 60px 20px;
+            background: #fff;
+        }
+        .features .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .feature-item {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            width: calc(33.333% - 20px);
+            margin-bottom: 30px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .feature-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+        .feature-item h2 {
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        .feature-item p {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        @@media (max-width: 768px) {
+            .features .container {
+                flex-direction: column;
+            }
+            .feature-item {
+                width: 100%;
+                margin-bottom: 20px;
+            }
+            .navbar-menu li {
+                margin-left: 15px;
+            }
+        }
+
+        footer {
+            background: #333;
+            color: #ccc;
+            padding: 20px 0;
+            text-align: center;
+            border-top: 3px solid #ff5c5c;
+        }
+    </style>
+</head>
+<body>
+
+<section class="hero">
+    <div class="container">
+        <h1>Xoş gəlmisiniz ProSys-ə!</h1>
+        <p>Müasir və effektiv imtahan idarəetmə sisteminiz</p>
+        <a asp-controller="Result" asp-action="Index" class="btn btn-primary">Nəticələr</a>
+    </div>
+</section>
+
+<section class="features">
+    <div class="container">
+        <div class="feature-item" data-bs-toggle="modal" data-bs-target="#lessonModal">
+            <h2>Dərslər</h2>
+            <p>Dərslərin sürətli şəkildə qeydiyyata alınması.</p>
+        </div>
+        <div class="feature-item" data-bs-toggle="modal" data-bs-target="#studentModal">
+            <h2>Şagirdlər</h2>
+            <p>Şagirdlərin sürətli şəkildə qeydiyyata alınması.</p>
+        </div>
+        <div class="feature-item" data-bs-toggle="modal" data-bs-target="#examModal">
+            <h2>İmtahanlar</h2>
+            <p>İmtahan nəticələrinin daxil edilməsi</p>
+        </div>
+    </div>
+</section>
+
+<div class="modal fade" id="lessonModal" tabindex="-1" role="dialog" aria-labelledby="lessonModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form id="lessonForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="lessonModalLabel">Yeni Dərs Əlavə Et</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Bağla">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="lessonCode">Dərs kodu</label>
+                        <input type="text" minlength=3 maxlength=3 class="form-control validate-input" id="lessonCode" name="LessonCode" required />
+                        <span class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="lessonName">Dərs adı</label>
+                        <input type="text" minlength=4 maxlength=30 class="form-control validate-input" id="lessonName" name="LessonName" required />
+                        <span class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="classNumber">Sinif nömrəsi</label>
+                        <input type="number" maxlength=2 class="form-control validate-input" id="classNumber" name="ClassNumber" required />
+                        <span class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="teacherName">Məllimin adı</label>
+                        <input type="text" minlength=3 maxlength=30 class="form-control validate-input" id="teacherName" name="TeacherName" required />
+                        <span class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="teacherSurname">Məllimin soyadı</label>
+                        <input type="text" minlength=3 maxlength=30 class="form-control validate-input" id="teacherSurname" name="TeacherSurname" required />
+                        <span class="text-danger"></span>
+                    </div>
+                    
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bağla</button>
+                    <button type="button" class="btn btn-primary" id="saveLesson">Əlavə Et</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="studentModal" tabindex="-1" role="dialog" aria-labelledby="studentModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form id="studentForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="studentModalLabel">Yeni tələbə əlavə et</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Bağla">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="studentNumber">Tələbə nömrəsi</label>
+                        <input type="number" maxlength=5 class="form-control validate-input" id="studentNumber" name="StudentNumber" required />
+                        <span class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="firstName">Ad</label>
+                        <input type="text" minlength="3" maxlength="30" class="form-control validate-input" id="firstName" name="FirstName" required />
+                        <span class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Soyad</label>
+                        <input type="text" minlength="3" maxlength="30" class="form-control validate-input" id="lastName" name="LastName" required />
+                        <span class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="classNumber2">Sinif nömrəsi</label>
+                        <input type="number" maxlength=2 class="form-control validate-input" id="classNumber2" name="ClassNumber2" required />
+                        <span class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bağla</button>
+                    <button type="button" class="btn btn-primary" id="saveStudent">Əlavə Et</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="examModal" tabindex="-1" role="dialog" aria-labelledby="examModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form id="examForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="examModalLabel">Yeni imtahan nəticəsi əlavə et</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Bağla">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="lessonId">Dərs seçin</label>
+                        <select class="form-control validate-input" id="lessonId" name="LessonId" required>
+                            <option value="">Dərs seçin...</option>
+                        </select>
+                        <span class="text-danger"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="studentId">Tələbə seçin</label>
+                        <select class="form-control validate-input" id="studentId" name="StudentId" required>
+                            <option value="">Tələbə seçin...</option>
+                        </select>
+                        <span class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="examDate">İmtahan tarixi</label>
+                        <input type="date" class="form-control validate-input" id="examDate" name="ExamDate" required />
+                        <span class="text-danger"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="grade">İmtahan qiyməti</label>
+                        <input type="number" min="0" max="5" class="form-control validate-input" id="grade" name="Grade" required />
+                        <span class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bağla</button>
+                    <button type="button" class="btn btn-primary" id="saveExam">Əlavə Et</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
